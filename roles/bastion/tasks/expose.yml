@@ -1,0 +1,73 @@
+---
+
+- name: Include fasts
+  ansible.builtin.include_tasks:
+    file: roles/bastion/tasks/facts.yml
+  tags: always
+
+- name: Configure host network
+  block:
+    - name: Delete default route
+      ansible.builtin.command: |
+        ip route del default via "{{ vm_ip }}"
+      register: result
+      failed_when: result.rc not in (0, 2)
+      when: vm_ip
+
+    - name: Retrieve resolver configuration backup
+      ansible.builtin.stat:
+        path: "/etc/resolv.conf.{{ role_name }}~"
+      register: result
+
+    - name: Restore resolver configuration
+      ansible.builtin.copy:
+        src: "/etc/resolv.conf.{{ role_name }}~"
+        dest: /etc/resolv.conf
+      when: result.stat.exists
+  tags: network
+  become: true
+  when: vm_exists
+
+- name: Configure guest network
+  ansible.builtin.shell: |
+    nmcli connection modify "System eth0" ipv4.ignore-auto-dns no
+    nmcli connection modify "System eth0" ipv4.ignore-auto-routes no
+    nmcli connection up "System eth0"
+  tags: vm
+  delegate_to: "{{ vm.name }}"
+  connection: ansible.builtin.ssh
+  become: true
+  when: vm_exists and vm_ip
+
+# See https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/configuring_and_managing_virtualization/assembly_managing-gpu-devices-in-virtual-machines_configuring-and-managing-virtualization
+- name: Disable host network device passthrough
+  block:
+    - name: Create temporary file
+      ansible.builtin.tempfile:
+        state: file
+      register: tmp_file
+
+    - name: Create hostdev XML file
+      ansible.builtin.template:
+        src: hostdev.xml
+        dest: "{{ tmp_file.path }}"
+
+    - name: Detach device from virtual machine
+      ansible.builtin.command: |
+        virsh -c "{{ libvirt.uri }}" detach-device {{ vm.name }} "{{ tmp_file.path }}" --persistent
+      register: result
+      failed_when: result.rc not in (0, 1)
+
+    - name: Remove VFIO PCI modprobe configuration
+      ansible.builtin.file:
+        path: /etc/modprobe.d/vfio-pci.conf
+        state: absent
+      become: true
+
+    - name: Remove VFIO modules
+      ansible.builtin.command: |
+        modprobe -r "{{ item }}"
+      become: true
+      loop: "{{ host.device.vfio_modules }}"
+  tags: passthrough
+  when: vm_exists

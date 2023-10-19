@@ -1,0 +1,29 @@
+---
+
+- name: Register virtual machine facts
+  block:
+    - name: Register virtual machine exists
+      ansible.builtin.command: |
+        virsh -c "{{ libvirt.uri }}" domid "{{ vm.name }}"
+      register: result
+      failed_when: result.rc not in (0, 1)
+
+    - name: Set virtual machine exists
+      ansible.builtin.set_fact:
+        vm_exists: "{{ not result.rc }}"
+
+    - name: Register virtual machine address
+      ansible.builtin.shell: |
+        virsh -c "{{ libvirt.uri }}" domifaddr "{{ vm.name }}" | awk '/ ipv4 / {print gensub(/\/[0-9]+/, "", "g", $4)}'
+      register: result
+
+    - name: Set virtual machine address
+      ansible.builtin.set_fact:
+        vm_ip: "{{ result.stdout }}"
+
+    - name: Add virtual machine to inventory
+      ansible.builtin.add_host:
+        name: "{{ vm.name }}"
+        ansible_ssh_host: "{{ vm_ip }}"
+      when: vm_exists and vm_ip
+  tags: always

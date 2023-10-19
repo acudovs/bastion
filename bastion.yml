@@ -1,0 +1,14 @@
+---
+
+- hosts: localhost
+  connection: ansible.builtin.local
+  vars:
+    role_name: bastion
+    play: create
+
+  tasks:
+    - name: "Play {{ role_name }} {{ play }} role tasks"
+      ansible.builtin.include_role:
+        name: "{{ role_name }}"
+        tasks_from: "{{ play }}"
+      tags: always

@@ -1,0 +1,74 @@
+---
+
+- name: Include fasts
+  ansible.builtin.include_tasks:
+    file: roles/bastion/tasks/facts.yml
+  tags: always
+
+# See https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/configuring_and_managing_virtualization/assembly_managing-gpu-devices-in-virtual-machines_configuring-and-managing-virtualization
+- name: Configure host network device passthrough
+  block:
+    - name: Remove network modules
+      ansible.builtin.command: |
+        modprobe -r "{{ item }}"
+      loop: "{{ host.device.modules }}"
+      become: true
+
+    - name: Create VFIO PCI modprobe configuration
+      ansible.builtin.copy:
+        dest: /etc/modprobe.d/vfio-pci.conf
+        content: |
+          softdep {{ host.device.driver }} pre: vfio-pci
+          options vfio-pci ids={{ host.device.id }}
+      become: true
+
+    - name: Create temporary file
+      ansible.builtin.tempfile:
+        state: file
+      register: tmp_file
+
+    - name: Create hostdev XML file
+      ansible.builtin.template:
+        src: hostdev.xml
+        dest: "{{ tmp_file.path }}"
+
+    - name: Attach device to virtual machine
+      ansible.builtin.command: |
+        virsh -c "{{ libvirt.uri }}" attach-device "{{ vm.name }}" "{{ tmp_file.path }}" --persistent
+      register: result
+      failed_when: result.rc not in (0, 1)
+  tags: passthrough
+  when: vm_exists
+
+- name: Configure guest network
+  ansible.builtin.shell: |
+    nmcli connection modify "System eth0" ipv4.ignore-auto-dns yes
+    nmcli connection modify "System eth0" ipv4.ignore-auto-routes yes
+    nmcli connection up "System eth0"
+  tags: vm
+  delegate_to: "{{ vm.name }}"
+  connection: ansible.builtin.ssh
+  become: true
+  when: vm_exists and vm_ip
+
+- name: Configure host network
+  block:
+    - name: Add default route
+      ansible.builtin.command: |
+        ip route add default via "{{ vm_ip }}"
+      failed_when: result.rc not in (0, 2)
+      when: vm_ip
+
+    - name: Backup resolver configuration
+      ansible.builtin.copy:
+        src: /etc/resolv.conf
+        dest: "/etc/resolv.conf.{{ role_name }}~"
+
+    - name: Configure resolver
+      ansible.builtin.copy:
+        dest: /etc/resolv.conf
+        content: |
+          nameserver {{ vm_ip }}
+  tags: network
+  become: true
+  when: vm_exists

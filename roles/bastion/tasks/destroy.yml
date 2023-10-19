@@ -1,0 +1,20 @@
+---
+
+- name: Include fasts
+  ansible.builtin.include_tasks:
+    file: roles/bastion/tasks/facts.yml
+  tags: always
+
+- name: Destroy virtual machine
+  block:
+    - name: Destroy virtual machine
+      ansible.builtin.command: |
+        virsh -c "{{ libvirt.uri }}" destroy "{{ vm.name }}"
+      failed_when: result.rc not in (0, 1)
+
+    - name: Undefine virtual machine
+      ansible.builtin.command: |
+        virsh -c "{{ libvirt.uri }}" undefine --remove-all-storage "{{ vm.name }}"
+      failed_when: result.rc not in (0, 1)
+  tags: vm
+  when: vm_exists

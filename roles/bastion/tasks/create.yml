@@ -1,0 +1,86 @@
+---
+
+- name: Include fasts
+  ansible.builtin.include_tasks:
+    file: roles/bastion/tasks/facts.yml
+  tags: always
+
+- name: Create guest disk image
+  block:
+    - name: Download disk image
+      ansible.builtin.get_url:
+        url: "{{ image.url }}"
+        dest: "{{ image.path }}"
+        checksum: "{{ image.checksum }}"
+
+    - name: Create guest disk image
+      ansible.builtin.copy:
+        src: "{{ image.path }}"
+        dest: "{{ vm.disk }}"
+  tags: image
+  become: true
+  when: not vm_exists
+
+- name: Create cloud-init ISO image
+  block:
+    - name: Create temporary directory
+      ansible.builtin.tempfile:
+        state: directory
+      register: tmp
+
+    - name: Create meta-data
+      ansible.builtin.template:
+        src: meta-data
+        dest: "{{ (tmp.path, 'meta-data') | path_join }}"
+
+    - name: Create user-data
+      ansible.builtin.template:
+        src: user-data
+        dest: "{{ (tmp.path, 'user-data') | path_join }}"
+
+    - name: Create write-files
+      ansible.builtin.template:
+        src: write-files
+        dest: "{{ (tmp.path, 'write-files') | path_join }}"
+
+    - name: Copy data directory
+      ansible.builtin.copy:
+        src: data/
+        dest: "{{ (tmp.path, 'data/') | path_join }}"
+
+    - name: Generate ISO image
+      ansible.builtin.command: |
+        genisoimage -input-charset utf-8 -joliet -rock -volid cidata -output "{{ vm.iso }}" "{{ tmp.path }}"
+      become: true
+  tags: iso
+  when: not vm_exists
+
+- name: Provision and start virtual machine
+  block:
+    - name: Provision virtual machine
+      ansible.builtin.command: >
+        virt-install
+          --connect "{{ libvirt.uri }}"
+          --name "{{ vm.name }}"
+          --vcpus "{{ vm.vcpus }}"
+          --cpu "{{ vm.cpu }}"
+          --memory "{{ vm.memory }}"
+          --import
+          --disk "{{ vm.disk }},device=disk,bus=virtio"
+          --disk "{{ vm.iso }},device=cdrom"
+          --network "{{ vm.network }}"
+          --virt-type "{{ vm.type }}"
+          --os-variant "{{ vm.os }}"
+          --noautoconsole
+      when: not vm_exists
+
+    - name: Start virtual machine
+      ansible.builtin.command: |
+        virsh -c "{{ libvirt.uri }}" start "{{ vm.name }}"
+      failed_when: result.rc not in (0, 1)
+  tags: provision
+
+- name: Show virtual machine console
+  ansible.builtin.command: |
+    virt-manager -c "{{ libvirt.uri }}" --show-domain-console "{{ vm.name }}"
+  tags: console

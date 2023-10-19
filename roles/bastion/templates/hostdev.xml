@@ -1,0 +1,10 @@
+<hostdev mode='subsystem' type='pci' managed='yes'>
+    <driver name='vfio'/>
+    <source>
+        <address
+                domain='{{ host.device.domain }}'
+                bus='{{ host.device.bus }}'
+                slot='{{ host.device.slot }}'
+                function='{{ host.device.function }}'/>
+    </source>
+</hostdev>

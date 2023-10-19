@@ -1,0 +1,74 @@
+---
+
+libvirt:
+  images: /var/lib/libvirt/images
+  uri: qemu:///system
+
+image:
+  # See https://yum.oracle.com/oracle-linux-templates.html
+  url: https://yum.oracle.com/templates/OracleLinux/OL9/u2/x86_64/OL9U2_x86_64-kvm-b197.qcow
+  path: "{{ (libvirt.images, 'OL9U2_x86_64-kvm-b197.qcow') | path_join }}"
+  checksum: sha256:840345cb866837ac7cc7c347cd9a8196c3a17e9c054c613eda8c2a912434c956
+
+vm:
+  name: "{{ role_name }}"
+  vcpus: 1
+  cpu: host
+  memory: 1024
+  disk: "{{ (libvirt.images, role_name + '.qcow') | path_join }}"
+  iso: "{{ (libvirt.images, role_name + '.iso') | path_join }}"
+  network: default
+  type: kvm
+  os: ol9
+
+  packages:
+    - NetworkManager-wifi
+    - bash-completion
+    - bind-utils
+    - dnsmasq
+    - firefox
+    - gdm
+    - gnome-shell-extension-top-icons
+    - gnome-shell-extension-window-list
+    - gnome-terminal
+    - kernel-uek-modules
+    - oracle-backgrounds
+    - xdg-utils
+    - xmlstarlet
+#    - /mnt/data/GlobalProtect_UI_focal_rpm-6.2.0.rpm
+
+  user:
+    name: "{{ ansible_user_id }}"
+    gecos: "{{ ansible_user_gecos }}"
+    home: "{{ ('/home', ansible_user_id) | path_join }}"
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_key: "{{ lookup('file', ansible_user_dir + '/.ssh/id_rsa.pub') }}"
+
+host:
+  # for slot in $(lspci | awk '/Ethernet|Network/ {print $1}'); do lspci -s "$slot" -Dknn; done
+  device:
+    id: "8086:2723"
+    pci_id: "0000:03:00.0"
+    domain: "0x0000"
+    bus: "0x03"
+    slot: "0x00"
+    function: "0x0"
+
+    # dmesg | grep 0000:03:00.0
+    # find /usr/lib/firmware -name '*cc-a0-72.ucode*'
+    # rpm -qf /usr/lib/firmware/iwlwifi-cc-a0-72.ucode.xz
+    driver: iwlwifi
+    firmware: iwlax2xx-firmware
+
+    # lsmod | grep iwlwifi
+    modules:
+      - iwlmvm
+      - iwlwifi
+
+    vfio_modules:
+      - vfio_iommu_type1
+      - vfio_pci
+      - vfio_pci_core
+      - vfio
+      - vfio_virqfd

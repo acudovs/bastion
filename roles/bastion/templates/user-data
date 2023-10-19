@@ -1,0 +1,32 @@
+#cloud-config
+
+users:
+  - name: "{{ vm.user.name }}"
+    gecos: "{{ vm.user.gecos }}"
+    homedir: "{{ vm.user.home }}"
+    shell: "{{ vm.user.shell }}"
+    sudo: "{{ vm.user.sudo }}"
+    ssh_authorized_keys: "{{ vm.user.ssh_key }}"
+
+runcmd:
+  - mount /dev/sr0 /mnt
+
+  - yum -y update
+  - yum -y install oracle-epel-release-el9
+  - yum -y --setopt=install_weak_deps=false install {{ vm.packages | join(' ') }} {{ host.device.firmware }}
+
+  - systemctl enable dnsmasq.service
+  - systemctl set-default graphical.target
+
+  - firewall-cmd --permanent --remove-service=cockpit --zone=public
+  - firewall-cmd --permanent --remove-service=ssh --zone=public
+  - firewall-cmd --permanent --add-masquerade --zone=public
+
+  - nmcli connection modify "System eth0" connection.zone trusted
+
+  - cloud-init --file /mnt/write-files --debug single --name write-files --frequency always
+  - chown -R "{{ vm.user.name }}:{{ vm.user.name }}" "{{ vm.user.home }}"
+
+#  - xmlstarlet ed --inplace --subnode /GlobalProtect/Settings --type elem -n default-browser -v yes /opt/paloaltonetworks/globalprotect/pangps.xml
+
+  - reboot
