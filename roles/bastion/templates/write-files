@@ -12,7 +12,7 @@ write_files:
         #!/usr/bin/bash
         gnome-extensions enable top-icons@gnome-shell-extensions.gcampax.github.com
         gnome-extensions enable window-list@gnome-shell-extensions.gcampax.github.com
-        gsettings get org.gnome.desktop.interface font-antialiasing rgba
+        gsettings set org.gnome.desktop.interface font-antialiasing rgba
         gsettings set org.gnome.desktop.screensaver lock-enabled false
         gsettings set org.gnome.desktop.session idle-delay 0
         gsettings set org.gnome.desktop.wm.preferences button-layout appmenu:minimize,maximize,close

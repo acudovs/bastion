@@ -40,6 +40,10 @@ vm:
   user:
     name: "{{ ansible_user_id }}"
     gecos: "{{ ansible_user_gecos }}"
+    groups:
+      - adm
+      - systemd-journal
+      - wheel
     home: "{{ ('/home', ansible_user_id) | path_join }}"
     shell: /bin/bash
     sudo: ALL=(ALL) NOPASSWD:ALL

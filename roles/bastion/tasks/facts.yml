@@ -13,8 +13,9 @@
         vm_exists: "{{ not result.rc }}"
 
     - name: Register virtual machine address
-      ansible.builtin.shell: |
-        virsh -c "{{ libvirt.uri }}" domifaddr "{{ vm.name }}" | awk '/ ipv4 / {print gensub(/\/[0-9]+/, "", "g", $4)}'
+      ansible.builtin.shell: >
+        virsh -c "{{ libvirt.uri }}" domifaddr "{{ vm.name }}" |
+          awk '/ ipv4 / {print gensub(/\/[0-9]+/, "", "g", $4)}'
       register: result
 
     - name: Set virtual machine address
