@@ -5,6 +5,7 @@
   vars:
     role_name: bastion
     play: create
+    vm_name: "{{ role_name }}"
 
   tasks:
     - name: "Play {{ role_name }} {{ play }} role tasks"

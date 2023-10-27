@@ -57,6 +57,7 @@
         virsh -c "{{ libvirt.uri }}" detach-device {{ vm.name }} "{{ tmp_file.path }}" --persistent
       register: result
       failed_when: result.rc not in (0, 1)
+      when: vm_exists
 
     - name: Remove VFIO PCI modprobe configuration
       ansible.builtin.file:
@@ -70,4 +71,3 @@
       become: true
       loop: "{{ host.device.vfio_modules }}"
   tags: passthrough
-  when: vm_exists

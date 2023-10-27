@@ -11,12 +11,12 @@ image:
   checksum: sha256:840345cb866837ac7cc7c347cd9a8196c3a17e9c054c613eda8c2a912434c956
 
 vm:
-  name: "{{ role_name }}"
+  name: "{{ vm_name }}"
   vcpus: 1
   cpu: host
   memory: 1024
-  disk: "{{ (libvirt.images, role_name + '.qcow') | path_join }}"
-  iso: "{{ (libvirt.images, role_name + '.iso') | path_join }}"
+  disk: "{{ (libvirt.images, vm_name + '.qcow') | path_join }}"
+  iso: "{{ (libvirt.images, vm_name + '.iso') | path_join }}"
   network: default
   type: kvm
   os: ol9
@@ -36,6 +36,51 @@ vm:
     - xdg-utils
     - xmlstarlet
 #    - /mnt/data/GlobalProtect_UI_focal_rpm-6.2.0.rpm
+
+  systemd:
+    system:
+      enable:
+        - dnsmasq
+      mask:
+        - colord
+        - geoclue
+        - power-profiles-daemon
+        - rsyslog
+        - switcheroo-control
+        - upower
+    user:
+      mask:
+        - at-spi-dbus-bus
+        - colord-session
+        - evolution-addressbook-factory
+        - evolution-calendar-factory
+        - evolution-source-registry
+        - evolution-user-prompter
+        - org.gnome.SettingsDaemon.A11ySettings
+        - org.gnome.SettingsDaemon.Color
+        - org.gnome.SettingsDaemon.Datetime
+        - org.gnome.SettingsDaemon.Housekeeping
+        - org.gnome.SettingsDaemon.Keyboard
+        - org.gnome.SettingsDaemon.MediaKeys
+        - org.gnome.SettingsDaemon.Power
+        - org.gnome.SettingsDaemon.PrintNotifications
+        - org.gnome.SettingsDaemon.Rfkill
+        - org.gnome.SettingsDaemon.ScreensaverProxy
+        - org.gnome.SettingsDaemon.Sharing
+        - org.gnome.SettingsDaemon.Smartcard
+        - org.gnome.SettingsDaemon.Sound
+        - org.gnome.SettingsDaemon.Subscription
+        - org.gnome.SettingsDaemon.UsbProtection
+        - org.gnome.SettingsDaemon.Wacom
+        - org.gnome.SettingsDaemon.XSettings
+        - pipewire
+        - pipewire.socket
+        - pipewire-pulse
+        - pipewire-pulse.socket
+        - wireplumber
+        - xdg-desktop-portal
+        - xdg-document-portal
+        - xdg-permission-store
 
   user:
     name: "{{ ansible_user_id }}"
@@ -76,3 +121,7 @@ host:
       - vfio_pci_core
       - vfio
       - vfio_virqfd
+
+  dns:
+    search:
+      - example.com

@@ -49,8 +49,9 @@
         dest: "{{ (tmp.path, 'data/') | path_join }}"
 
     - name: Generate ISO image
-      ansible.builtin.command: |
-        genisoimage -input-charset utf-8 -joliet -rock -volid cidata -output "{{ vm.iso }}" "{{ tmp.path }}"
+      ansible.builtin.command: >
+        genisoimage -input-charset utf-8 -joliet -rock -volid cidata
+          -output "{{ vm.iso }}" "{{ tmp.path }}"
       become: true
   tags: iso
   when: not vm_exists
@@ -77,6 +78,7 @@
     - name: Start virtual machine
       ansible.builtin.command: |
         virsh -c "{{ libvirt.uri }}" start "{{ vm.name }}"
+      register: result
       failed_when: result.rc not in (0, 1)
   tags: provision
 

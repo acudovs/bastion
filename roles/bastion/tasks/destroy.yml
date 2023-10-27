@@ -10,11 +10,13 @@
     - name: Destroy virtual machine
       ansible.builtin.command: |
         virsh -c "{{ libvirt.uri }}" destroy "{{ vm.name }}"
+      register: result
       failed_when: result.rc not in (0, 1)
 
     - name: Undefine virtual machine
       ansible.builtin.command: |
         virsh -c "{{ libvirt.uri }}" undefine --remove-all-storage "{{ vm.name }}"
+      register: result
       failed_when: result.rc not in (0, 1)
   tags: vm
   when: vm_exists

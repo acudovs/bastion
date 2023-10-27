@@ -56,8 +56,8 @@
     - name: Add default route
       ansible.builtin.command: |
         ip route add default via "{{ vm_ip }}"
+      register: result
       failed_when: result.rc not in (0, 2)
-      when: vm_ip
 
     - name: Backup resolver configuration
       ansible.builtin.copy:
@@ -68,7 +68,8 @@
       ansible.builtin.copy:
         dest: /etc/resolv.conf
         content: |
+          search {{ host.dns.search | join(' ') }}
           nameserver {{ vm_ip }}
   tags: network
   become: true
-  when: vm_exists
+  when: vm_exists and vm_ip

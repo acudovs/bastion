@@ -12,14 +12,19 @@ users:
     ssh_authorized_keys: "{{ vm.user.ssh_key }}"
 
 runcmd:
-  - mount /dev/sr0 /mnt
+  - mount -o ro /dev/sr0 /mnt
 
   - yum -y update
   - yum -y install oracle-epel-release-el9
   - yum -y --setopt=install_weak_deps=false install {{ vm.packages | join(' ') }} {{ host.device.firmware }}
 
-  - systemctl enable dnsmasq.service
+  - systemctl enable {{ vm.systemd.system.enable | join(' ') }}
+  - systemctl mask {{ vm.systemd.system.mask | join(' ') }}
   - systemctl set-default graphical.target
+
+  # Temporarily disable SELinux for cloud-init to be able to manage user services
+  - setenforce 0
+  - systemctl --user -M "{{ vm.user.name }}@" mask  {{ vm.systemd.user.mask | join(' ') }}
 
   - firewall-cmd --permanent --remove-service=cockpit --zone=public
   - firewall-cmd --permanent --remove-service=ssh --zone=public
