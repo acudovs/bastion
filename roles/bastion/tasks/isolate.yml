@@ -18,6 +18,7 @@
       ansible.builtin.copy:
         dest: /etc/modprobe.d/vfio-pci.conf
         content: |
+          blacklist {{ host.device.driver }}
           softdep {{ host.device.driver }} pre: vfio-pci
           options vfio-pci ids={{ host.device.id }}
       become: true

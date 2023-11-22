@@ -31,8 +31,10 @@ vm:
     - gnome-shell-extension-top-icons
     - gnome-shell-extension-window-list
     - gnome-terminal
-    - kernel-uek-modules
+    - gnome-tweaks
+    - kernel
     - oracle-backgrounds
+    - pciutils
     - xdg-utils
     - xmlstarlet
 #    - /mnt/data/GlobalProtect_UI_focal_rpm-6.2.0.rpm
@@ -52,6 +54,8 @@ vm:
       mask:
         - at-spi-dbus-bus
         - colord-session
+        - "dbus-:1.2-org.gnome.Shell.CalendarServer@"
+        - "dbus-:1.2-org.gnome.Shell.Notifications@"
         - evolution-addressbook-factory
         - evolution-calendar-factory
         - evolution-source-registry

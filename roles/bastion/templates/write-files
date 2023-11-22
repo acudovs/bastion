@@ -12,7 +12,10 @@ write_files:
         #!/usr/bin/bash
         gnome-extensions enable top-icons@gnome-shell-extensions.gcampax.github.com
         gnome-extensions enable window-list@gnome-shell-extensions.gcampax.github.com
+        gsettings set org.gnome.desktop.interface enable-animations false
         gsettings set org.gnome.desktop.interface font-antialiasing rgba
+        gsettings set org.gnome.desktop.interface font-hinting slight
+        gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark
         gsettings set org.gnome.desktop.screensaver lock-enabled false
         gsettings set org.gnome.desktop.session idle-delay 0
         gsettings set org.gnome.desktop.wm.preferences button-layout appmenu:minimize,maximize,close
@@ -25,14 +28,22 @@ write_files:
         Name=GNOME Setup
         Exec={{ vm.user.home }}/.local/bin/gnome-setup.sh
 
-  - path: /etc/NetworkManager/dispatcher.d/globalprotect
-    permissions: '0755'
+  - path: {{ vm.user.home }}/.config/autostart/org.gnome.Evolution-alarm-notify.desktop
+    owner: {{ vm.user.name }}
     content: |
-        #!/usr/bin/bash
-        case "$1:$2" in
-            gpd0:up) cp /opt/paloaltonetworks/globalprotect/network/config/resolv.conf /etc/resolv.conf ;;
-            gpd0:down) cp /run/NetworkManager/resolv.conf /etc/resolv.conf ;;
-        esac
+        [Desktop Entry]
+        Type=Application
+        Hidden=true
+
+  - path: {{ vm.user.home }}/.bashrc.d/alias.sh
+    owner: {{ vm.user.name }}
+    content: |
+        alias ..='cd ..'
+        alias l='ls -aFl --color=auto'
+        alias cp='cp -i'
+        alias mv='mv -i'
+        alias rm='rm -i'
+        alias ping='ping -DO'
 
   - path: /etc/dnsmasq.conf
     content: |
@@ -44,6 +55,21 @@ write_files:
         [Unit]
         Wants=network-online.target
         After=network-online.target
+
+  - path: /etc/NetworkManager/dispatcher.d/globalprotect
+    permissions: '0755'
+    content: |
+        #!/usr/bin/bash
+        case "$1:$2" in
+            gpd0:up)
+                cp /opt/paloaltonetworks/globalprotect/network/config/resolv.conf /etc/resolv.conf
+                systemctl restart dnsmasq
+                ;;
+            gpd0:down)
+                cp /run/NetworkManager/resolv.conf /etc/resolv.conf
+                systemctl restart dnsmasq
+                ;;
+        esac
 
   - path: /etc/ssl/certs/6fa5da56.0
     content: |
