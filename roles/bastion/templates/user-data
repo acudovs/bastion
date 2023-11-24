@@ -19,7 +19,7 @@ runcmd:
   - yum -y --setopt=install_weak_deps=false install {{ vm.packages | join(' ') }} {{ host.device.firmware }}
 
   # Set the default kernel to non UEK if installed
-  - grubby --info ALL | while read l; do eval "$l"; [[ "$l" == kernel* && "$l" != kernel*uek* ]] && grubby --set-default-index="$index" && break; done
+  - grubby --info ALL | while read l; do declare "$l"; [[ "$l" == kernel* && "$l" != kernel*uek* ]] && grubby --set-default-index="$index" && break; done
 
   - systemctl enable {{ vm.systemd.system.enable | join(' ') }}
   - systemctl mask {{ vm.systemd.system.mask | join(' ') }}
