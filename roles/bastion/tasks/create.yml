@@ -2,7 +2,7 @@
 
 - name: Include fasts
   ansible.builtin.include_tasks:
-    file: roles/bastion/tasks/facts.yml
+    file: "roles/{{ role_name }}/tasks/facts.yml"
   tags: always
 
 - name: Create guest disk image

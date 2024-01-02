@@ -6,9 +6,9 @@ libvirt:
 
 image:
   # See https://yum.oracle.com/oracle-linux-templates.html
-  url: https://yum.oracle.com/templates/OracleLinux/OL9/u2/x86_64/OL9U2_x86_64-kvm-b197.qcow
-  path: "{{ (libvirt.images, 'OL9U2_x86_64-kvm-b197.qcow') | path_join }}"
-  checksum: sha256:840345cb866837ac7cc7c347cd9a8196c3a17e9c054c613eda8c2a912434c956
+  url: https://yum.oracle.com/templates/OracleLinux/OL9/u3/x86_64/OL9U3_x86_64-kvm-b211.qcow
+  path: "{{ (libvirt.images, 'OL9U3_x86_64-kvm-b211.qcow') | path_join }}"
+  checksum: sha256:b37061c50d341d01b674455eca404d0bdcf2c8391665eca7e601cbd4aef456f8
 
 vm:
   name: "{{ vm_name }}"
@@ -37,7 +37,7 @@ vm:
     - pciutils
     - xdg-utils
     - xmlstarlet
-#    - /mnt/data/GlobalProtect_UI_focal_rpm-6.2.0.rpm
+    # - /mnt/data/GlobalProtect_UI_focal_rpm-6.2.0.rpm
 
   systemd:
     system:
@@ -124,7 +124,6 @@ host:
       - vfio_pci
       - vfio_pci_core
       - vfio
-      - vfio_virqfd
 
   dns:
     search:

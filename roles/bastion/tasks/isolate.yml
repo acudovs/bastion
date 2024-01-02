@@ -2,7 +2,7 @@
 
 - name: Include fasts
   ansible.builtin.include_tasks:
-    file: roles/bastion/tasks/facts.yml
+    file: "roles/{{ role_name }}/tasks/facts.yml"
   tags: always
 
 # See https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/configuring_and_managing_virtualization/assembly_managing-gpu-devices-in-virtual-machines_configuring-and-managing-virtualization
@@ -59,6 +59,18 @@
         ip route add default via "{{ vm_ip }}"
       register: result
       failed_when: result.rc not in (0, 2)
+
+    - name: Remove LIBVIRT_FWI iptables rule
+      ansible.builtin.command: |
+        iptables -D LIBVIRT_FWI -o virbr0 -j REJECT --reject-with icmp-port-unreachable
+      register: result
+      failed_when: result.rc not in (0, 1)
+
+    - name: Remove LIBVIRT_FWO iptables rule
+      ansible.builtin.command: |
+        iptables -D LIBVIRT_FWO -i virbr0 -j REJECT --reject-with icmp-port-unreachable
+      register: result
+      failed_when: result.rc not in (0, 1)
 
     - name: Backup resolver configuration
       ansible.builtin.copy:
